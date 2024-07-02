@@ -52,13 +52,23 @@ app.post('/razorpay/webhook', (req, res) => {
     const digest = shasum.digest('hex');
 
     if (digest === req.headers['x-razorpay-signature']) {
-        console.log('Payment verified:', req.body);
+        console.log('Webhook event received:', req.body);
+
+        // Example: Log transaction details
+        const paymentId = req.body.payload.payment.entity.id;
+        const amount = req.body.payload.payment.entity.amount / 100; // Amount in paisa, convert to INR
+        const status = req.body.payload.payment.entity.status;
+        console.log(`Payment ID: ${paymentId}, Amount: ${amount} INR, Status: ${status}`);
+
+        // Process the webhook event as needed
+
         res.status(200).send('OK');
     } else {
         console.log('Invalid signature');
         res.status(400).send('Invalid signature');
     }
 });
+
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
