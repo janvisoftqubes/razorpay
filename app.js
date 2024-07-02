@@ -1,14 +1,15 @@
-// app.js
 require('dotenv').config();
 const express = require('express');
 const Razorpay = require('razorpay');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
+const path = require('path');
 
 const app = express();
 const port = 3000;
 
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views')); // Set the views directory
 app.use(bodyParser.json());
 
 const razorpayInstance = new Razorpay({
@@ -25,8 +26,9 @@ const createStaticQRCode = async () => {
     const params = {
         type: 'upi_qr',
         name: 'Test Merchant',
-        usage: 'multiple_use',
-        fixed_amount: false, // Allow any amount
+        usage: 'single_use', // Change to single use for default payment
+        fixed_amount: true, // Fix the amount
+        payment_amount: 1000, // Amount in paise (10 INR = 1000 paise)
     };
 
     try {
