@@ -1,75 +1,81 @@
+// const express = require('express');
+// const path = require('path');
+// const app = express();
+
+// // Serve static files from the 'public' directory
+// app.use(express.static('public'));
+
+// // Route to serve the QR code image
+// app.get('/qr-code', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'QrCode.png')); // Update with your actual file name
+// });
+
+// // Start the server
+// const PORT = process.env.PORT || 3000;
+// app.listen(PORT, () => {
+//   console.log(`Server is running on http://localhost:${PORT}`);
+// });
+
 require('dotenv').config();
+
 const express = require('express');
-const Razorpay = require('razorpay');
 const bodyParser = require('body-parser');
-const crypto = require('crypto');
+const Razorpay = require('razorpay');
 const path = require('path');
 
 const app = express();
-const port = 3000;
 
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views')); // Set the views directory
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('public'));
+app.set('view engine', 'ejs');
 
-const razorpayInstance = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
+// Razorpay instance setup
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID, // replace with your Razorpay key id
+  key_secret:process.env.RAZORPAY_KEY_SECRET // replace with your Razorpay key secret
 });
 
-let qrCodeCache = null;
-
-const createStaticQRCode = async () => {
-    if (qrCodeCache) {
-        return qrCodeCache;
-    }
-    const params = {
-        type: 'upi_qr',
-        name: 'Test Merchant',
-        usage: 'single_use', // Change to single use for default payment
-        fixed_amount: true, // Fix the amount
-        payment_amount: 1000, // Amount in paise (10 INR = 1000 paise)
-    };
-
-    try {
-        qrCodeCache = await razorpayInstance.qrCode.create(params);
-        console.log('Static QR Code created:', qrCodeCache);
-        return qrCodeCache;
-    } catch (error) {
-        console.error('Error creating QR Code:', error);
-    }
-};
-
-app.get('/generate-qr', async (req, res) => {
-    const qrCode = await createStaticQRCode();
-    res.render('qr', { qrCode });
+// Route to display the QR code and payment form
+app.get('/', (req, res) => {
+  res.render('index');
 });
 
+// Webhook endpoint to handle Razorpay notifications
 app.post('/razorpay/webhook', (req, res) => {
-    const secret = process.env.WEBHOOK_SECRET;
-    const shasum = crypto.createHmac('sha256', secret);
-    shasum.update(JSON.stringify(req.body));
-    const digest = shasum.digest('hex');
-
-    if (digest === req.headers['x-razorpay-signature']) {
-        console.log('Webhook event received:', req.body);
-
-        // Example: Log transaction details
-        const paymentId = req.body.payload.payment.entity.id;
-        const amount = req.body.payload.payment.entity.amount / 100; // Amount in paisa, convert to INR
-        const status = req.body.payload.payment.entity.status;
-        console.log(`Payment ID: ${paymentId}, Amount: ${amount} INR, Status: ${status}`);
-
-        // Process the webhook event as needed
-
-        res.status(200).send('OK');
-    } else {
-        console.log('Invalid signature');
-        res.status(400).send('Invalid signature');
-    }
+  // Handle webhook here
+  console.log("inside webhook--",req.body);
+  res.status(200).json({ status: 'ok' });
 });
 
+// Route to handle payment requests
+app.post('/pay', async (req, res) => {
+    const { amount } = req.body;
+  
+    const payment_capture = 1;
+    const currency = 'INR';
+    const options = {
+      amount: amount * 100, // amount in the smallest currency unit
+      currency,
+      payment_capture
+    };
+  
+    try {
+      const response = await razorpay.orders.create(options);
+      res.json({
+        id: response.id,
+        currency: response.currency,
+        amount: response.amount
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(500).send('Error creating order');
+    }
+  });
+  
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+// Start the server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
