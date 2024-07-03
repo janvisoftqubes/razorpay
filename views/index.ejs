@@ -1,20 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Razorpay QR Code Payment</title>
-</head>
-<body>
-  <h1>Scan the QR Code to Make a Payment</h1>
-  <img src="/QrCode.jpeg" alt="QR Code">
-  <form action="/pay" method="POST">
-    <label for="amount">Enter Amount:</label>
-    <input type="number" id="amount" name="amount" required>
-    <button type="submit">Pay</button>
-  </form>
-</body>
-</html> -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,14 +6,26 @@
   <title>Razorpay QR Code Payment</title>
 </head>
 <body>
-  <h1>Scan the QR Code to Make a Payment</h1>
-  <img src="/QrCode.jpeg" alt="QR Code">
-  <form action="/pay" method="POST">
-    <label for="amount">Enter Amount:</label>
-    <input type="number" id="amount" name="amount" required>
-    <button type="submit">Pay</button>
+  <h1>Razorpay QR Code Payment</h1>
+  <% if (error) { %>
+    <p style="color: red;"><%= error %></p>
+  <% } %>
+  <form action="/create-order" method="POST">
+    <label for="customerName">Customer Name:</label>
+    <input type="text" id="customerName" name="customerName" required><br><br>
+    <label for="amount">Amount (INR):</label>
+    <input type="number" id="amount" name="amount" required><br><br>
+    <label for="currency">Currency:</label>
+    <input type="text" id="currency" name="currency" value="INR" required><br><br>
+    <label for="receipt">Receipt:</label>
+    <input type="text" id="receipt" name="receipt" required><br><br>
+    <button type="submit">Generate QR Code</button>
   </form>
+  <% if (qrCode) { %>
+    <h2>Scan this QR code to make the payment:</h2>
+    <img src="<%= qrCode.image_url %>" alt="QR Code">
+    <p>Order ID: <%= order.id %></p>
+    <p>Amount: <%= order.amount / 100 %> <%= order.currency %></p>
+  <% } %>
 </body>
 </html>
-
-

@@ -1,57 +1,64 @@
-// const express = require('express');
-// const path = require('path');
-// const app = express();
-
-// // Serve static files from the 'public' directory
-// app.use(express.static('public'));
-
-// // Route to serve the QR code image
-// app.get('/qr-code', (req, res) => {
-//   res.sendFile(path.join(__dirname, 'public', 'QrCode.png')); // Update with your actual file name
-// });
-
-// // Start the server
-// const PORT = process.env.PORT || 3000;
-// app.listen(PORT, () => {
-//   console.log(`Server is running on http://localhost:${PORT}`);
-// });
-
-require("dotenv").config();
-
 const express = require('express');
+const bodyParser = require('body-parser');
+const Razorpay = require('razorpay');
+const dotenv = require('dotenv');
 const axios = require('axios');
+dotenv.config();
+
 const app = express();
-const port = 3000;
 
-app.use(express.static('public'));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.set('view engine', 'ejs');
 
-app.get('/generate-qr', async (req, res) => {
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET
+});
+
+app.get('/', (req, res) => {
+  res.render('index', { order: null, qrCode: null, error: null });
+});
+
+app.post('/create-order', async (req, res) => {
+  const { amount, currency, receipt, customerName } = req.body;
+
+  const options = {
+    amount: amount * 100, // Amount in paise
+    currency,
+    receipt,
+    notes: {
+      customerName
+    }
+  };
+
   try {
-    const response = await axios.post('https://api.razorpay.com/v1/payments/qr', {
-      type: 'upi_qr',
-      name: 'Test QR',
-      usage: 'single_use',
-      fixed_amount: false,
-      payment_amount: 1000,
-      currency: 'INR'
-    }, {
-      auth: {
-        username:process.env.RAZORPAY_KEY_ID, // Replace with your Razorpay Key ID
-        password: process.env.RAZORPAY_KEY_SECRET  // Replace with your Razorpay Key Secret
+    const order = await razorpay.orders.create(options);
+    const qrCodeResponse = await axios.post(
+      'https://api.razorpay.com/v1/payments/qr_codes',
+      {
+        type: 'upi_qr',
+        name: customerName,
+        usage: 'single_use',
+        fixed_amount: true,
+        amount: amount * 100,
+        description: `Payment for order ${order.id}`,
+        currency,
       },
-      headers: {
-        'Content-Type': 'application/json'
+      {
+        auth: {
+          username: process.env.RAZORPAY_KEY_ID,
+          password: process.env.RAZORPAY_KEY_SECRET
+        }
       }
-    });
+    );
 
-    const qrCodeUrl = response.data.image_url;
-    res.json({ qrCodeUrl });
+    res.render('index', { order, qrCode: qrCodeResponse.data, error: null });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to generate QR code' });
+    console.error(error.response ? error.response.data : error.message);
+    res.render('index', { order: null, qrCode: null, error: 'Error creating order or QR code' });
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+app.listen(3000, () => {
+  console.log('Server started on http://localhost:3000');
 });
