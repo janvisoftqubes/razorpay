@@ -22,6 +22,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const Razorpay = require('razorpay');
 const path = require('path');
+const axios = require('axios');
 
 const app = express();
 
@@ -32,47 +33,62 @@ app.set('view engine', 'ejs');
 
 // Razorpay instance setup
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID, // replace with your Razorpay key id
-  key_secret:process.env.RAZORPAY_KEY_SECRET // replace with your Razorpay key secret
+  key_id:process.env.RAZORPAY_KEY_ID, // replace with your Razorpay key id
+  key_secret: process.env.RAZORPAY_KEY_SECRET// replace with your Razorpay key secret
 });
+
+const qrCodeId = 'qr_OU2cfTAbaWzV02'; // Your QR code ID
 
 // Route to display the QR code and payment form
 app.get('/', (req, res) => {
-  res.render('index');
-});
-
-// Webhook endpoint to handle Razorpay notifications
-app.post('/razorpay/webhook', (req, res) => {
-  // Handle webhook here
-  console.log("inside webhook--",req.body);
-  res.status(200).json({ status: 'ok' });
+  res.render('index', { qrCodeId });
 });
 
 // Route to handle payment requests
 app.post('/pay', async (req, res) => {
-    const { amount } = req.body;
-  
-    const payment_capture = 1;
-    const currency = 'INR';
-    const options = {
-      amount: amount * 100, // amount in the smallest currency unit
-      currency,
-      payment_capture
-    };
-  
-    try {
-      const response = await razorpay.orders.create(options);
-      res.json({
-        id: response.id,
-        currency: response.currency,
-        amount: response.amount
-      });
-    } catch (error) {
-      console.log(error);
-      res.status(500).send('Error creating order');
-    }
-  });
-  
+  const { amount } = req.body;
+
+  try {
+    // Create a payment order linked to the QR code
+    const response = await axios.post(`https://api.razorpay.com/v1/payments/create/qr/${qrCodeId}`, {
+      amount: amount * 100, // amount in paise
+      currency: 'INR'
+    }, {
+      auth: {
+        username: process.env.RAZORPAY_KEY_ID, // replace with your Razorpay key id
+        password: process.env.RAZORPAY_KEY_SECRET // replace with your Razorpay key secret
+      }
+    });
+
+    res.render('pay', {
+      qrCode: qrCodeId,
+      amount: amount,
+      paymentId: response.data.id
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Error creating payment');
+  }
+});
+
+// Webhook endpoint to handle Razorpay notifications
+app.post('/razorpay/webhook', (req, res) => {
+  const secret = process.env.WEBHOOK_SECRET; // Replace with your webhook secret
+
+  const crypto = require('crypto');
+  const shasum = crypto.createHmac('sha256', secret);
+  shasum.update(JSON.stringify(req.body));
+  const digest = shasum.digest('hex');
+
+  if (digest === req.headers['x-razorpay-signature']) {
+    // Handle successful payment here
+    console.log('Payment successful:', req.body);
+  } else {
+    console.log('Invalid signature');
+  }
+
+  res.status(200).json({ status: 'ok' });
+});
 
 // Start the server
 const PORT = process.env.PORT || 3000;
