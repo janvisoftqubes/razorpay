@@ -13,17 +13,21 @@
   <form action="/create-order" method="POST">
     <label for="customerName">Customer Name:</label>
     <input type="text" id="customerName" name="customerName" required><br><br>
+    <label for="customerEmail">Customer Email:</label>
+    <input type="email" id="customerEmail" name="customerEmail" required><br><br>
+    <label for="customerContact">Customer Contact:</label>
+    <input type="text" id="customerContact" name="customerContact" required><br><br>
     <label for="amount">Amount (INR):</label>
     <input type="number" id="amount" name="amount" required><br><br>
     <label for="currency">Currency:</label>
     <input type="text" id="currency" name="currency" value="INR" required><br><br>
     <label for="receipt">Receipt:</label>
     <input type="text" id="receipt" name="receipt" required><br><br>
-    <button type="submit">Generate QR Code</button>
+    <button type="submit">Generate Payment Link</button>
   </form>
   <% if (qrCode) { %>
-    <h2>Scan this QR code to make the payment:</h2>
-    <img src="<%= qrCode.image_url %>" alt="QR Code">
+    <h2>Click the link below to make the payment:</h2>
+    <a href="<%= qrCode %>" target="_blank">Pay Now</a>
     <p>Order ID: <%= order.id %></p>
     <p>Amount: <%= order.amount / 100 %> <%= order.currency %></p>
   <% } %>
