@@ -28,7 +28,7 @@ const app = express();
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public'))); // Serve static files from the root directory
+app.use(express.static(path.join(__dirname, "public"))); // Serve static files from the public directory
 app.set("view engine", "ejs");
 
 // Razorpay instance setup
@@ -41,7 +41,7 @@ const qrCodeId = "qr_OU2cfTAbaWzV02"; // Your QR code ID
 
 // Route to display the QR code and payment form
 app.get("/", (req, res) => {
-  res.render("index");
+  res.render("index", { qrCodeId });
 });
 
 // Route to handle payment requests
@@ -51,7 +51,7 @@ app.post("/pay", async (req, res) => {
   try {
     // Create a payment order linked to the QR code
     const response = await axios.post(
-      `https://api.razorpay.com/v1/payments/create/qr/${qrCodeId}`,
+      `https://api.razorpay.com/v1/payments/qr/${qrCodeId}/payments`,
       {
         amount: amount * 100, // amount in paise
         currency: "INR",
@@ -63,9 +63,9 @@ app.post("/pay", async (req, res) => {
         },
       }
     );
-    console.log("response-->", response);
+
     res.render("pay", {
-      qrCode: "QrCode.jpeg",
+      qrCode: "/qr-code.png",
       amount: amount,
       paymentId: response.data.id,
     });
@@ -77,8 +77,8 @@ app.post("/pay", async (req, res) => {
 
 // Webhook endpoint to handle Razorpay notifications
 app.post("/razorpay/webhook", (req, res) => {
-  const secret = "YOUR_WEBHOOK_SECRET"; // Replace with your webhook secret
-  console.log("webhook-->", req.body);
+  const secret = process.env.WEBHOOK_SECRET; // Replace with your webhook secret
+
   const crypto = require("crypto");
   const shasum = crypto.createHmac("sha256", secret);
   shasum.update(JSON.stringify(req.body));
