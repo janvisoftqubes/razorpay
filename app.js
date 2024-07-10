@@ -73,6 +73,8 @@ app.post('/create-order', async (req, res) => {
 app.post('/razorpay/webhook', (req, res) => {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
+
+  console.log("secret-->",secret)
   const shasum = crypto.createHmac('sha256', secret);
   shasum.update(JSON.stringify(req.body));
   const digest = shasum.digest('hex');
@@ -83,6 +85,8 @@ app.post('/razorpay/webhook', (req, res) => {
     // Handle the event
     const event = req.body.event;
     const payload = req.body.payload;
+
+    console.log("event-->",event)
 
     if (event === 'payment.captured') {
       const orderId = payload.payment.entity.order_id;
