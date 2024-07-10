@@ -70,6 +70,35 @@ app.post('/generate-qr', async (req, res) => {
   }
 });
 
+app.post('/razorpay/webhook', (req, res) => {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+  const shasum = crypto.createHmac('sha256', secret);
+  shasum.update(JSON.stringify(req.body));
+  const digest = shasum.digest('hex');
+
+  if (digest === req.headers['x-razorpay-signature']) {
+    console.log('Webhook verified successfully');
+
+    // Handle the event
+    const event = req.body.event;
+    const payload = req.body.payload;
+
+
+    console.log("event--->",event)
+    if (event === 'payment.captured') {
+      const orderId = payload.payment.entity.order_id;
+      console.log(`Payment captured for order ID: ${orderId}`);
+      // Update the order status in your database
+    }
+
+    res.status(200).send('Webhook received');
+  } else {
+    console.log('Webhook verification failed');
+    res.status(400).send('Invalid signature');
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
