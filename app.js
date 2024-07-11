@@ -113,6 +113,14 @@ app.post("/razorpay/webhook", (req, res) => {
       const paymentLinkId = payload.payment_link.entity.id;
       const paymentId = payload.payment.entity.id;
 
+      const notes = payload.payment.entity.notes;
+      const upi=  payload.payment.entity.upi
+
+      console.log("notes--->", notes)
+      console.log("upi--->", upi)
+
+
+
       console.log("paymentLinkId-->", paymentLinkId);
       console.log("paymentId-->", paymentId);
       // Update the order status in your database
