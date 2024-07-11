@@ -4,8 +4,10 @@ const Razorpay = require("razorpay");
 const dotenv = require("dotenv");
 const crypto = require("crypto");
 const axios = require("axios");
+const customerPayment = require("./views/customerPaymentSchema");
+const dbConnect = require("./views/dbConnect");
 dotenv.config();
-
+dbConnect();
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -85,7 +87,7 @@ app.post("/create-order", async (req, res) => {
   }
 });
 
-app.post("/razorpay/webhook", (req, res) => {
+app.post("/razorpay/webhook", async (req, res) => {
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
   console.log("secret-->", secret);
@@ -100,34 +102,27 @@ app.post("/razorpay/webhook", (req, res) => {
     const event = req.body.event;
     const payload = req.body.payload;
 
-
     console.log("req.body-->", req.body, "\n");
 
     console.log("event-->", event);
     console.log("payload-->", payload);
 
-
     const notes = payload.payment.entity.notes;
-    const upi=  payload.payment.entity.upi
+    const upi = payload.payment.entity.upi;
 
-    console.log("notes--->", notes)
-    console.log("upi--->", upi)
+    console.log("notes--->", notes);
+    console.log("upi--->", upi);
 
-    
     if (event === "payment.captured") {
       const orderId = payload.payment.entity.order_id;
       console.log(`Payment captured for order ID: ${orderId}`);
 
-      const paymentLinkId = payload.payment_link.entity.id;
-      const paymentId = payload.payment.entity.id;
-
-    
-
-
-
-      console.log("paymentLinkId-->", paymentLinkId);
-      console.log("paymentId-->", paymentId);
       // Update the order status in your database
+      const update = await customerPayment.updateOne(
+        { orderId: notes.receipt },
+        { $set: { paymentStatus: "Completed" } }
+      );
+      console.log("update-->", update);
     }
 
     res.status(200).send("Webhook received");
