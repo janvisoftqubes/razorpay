@@ -87,6 +87,7 @@ app.post('/razorpay/webhook', (req, res) => {
     const payload = req.body.payload;
 
     console.log("event-->",event)
+    console.log("payload-->",payload)
 
 
     if (event === 'payment.captured') {
