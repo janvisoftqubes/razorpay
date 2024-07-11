@@ -93,6 +93,12 @@ app.post('/razorpay/webhook', (req, res) => {
     if (event === 'payment.captured') {
       const orderId = payload.payment.entity.order_id;
       console.log(`Payment captured for order ID: ${orderId}`);
+
+      const paymentLinkId = payload.payment_link.entity.id;
+      const paymentId = payload.payment.entity.id;
+
+      console.log("paymentLinkId-->",paymentLinkId)
+         console.log("paymentId-->",paymentId);
       // Update the order status in your database
     }
 
