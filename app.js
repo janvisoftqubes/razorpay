@@ -106,6 +106,14 @@ app.post("/razorpay/webhook", (req, res) => {
     console.log("event-->", event);
     console.log("payload-->", payload);
 
+
+    const notes = payload.payment.entity.notes;
+    const upi=  payload.payment.entity.upi
+
+    console.log("notes--->", notes)
+    console.log("upi--->", upi)
+
+    
     if (event === "payment.captured") {
       const orderId = payload.payment.entity.order_id;
       console.log(`Payment captured for order ID: ${orderId}`);
@@ -113,11 +121,7 @@ app.post("/razorpay/webhook", (req, res) => {
       const paymentLinkId = payload.payment_link.entity.id;
       const paymentId = payload.payment.entity.id;
 
-      const notes = payload.payment.entity.notes;
-      const upi=  payload.payment.entity.upi
-
-      console.log("notes--->", notes)
-      console.log("upi--->", upi)
+    
 
 
 
