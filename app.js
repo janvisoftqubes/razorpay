@@ -134,7 +134,7 @@ app.post("/razorpay/webhook", async (req, res) => {
         { orderId: notes.receipt },
         {
           $set: {
-            requestStatus: "Completed",
+            requestStatus: "Approved",
             paymentStatus: "Completed",
             agencyPaymentStatus: "Completed",
           },
