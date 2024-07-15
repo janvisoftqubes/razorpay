@@ -5,6 +5,8 @@ const dotenv = require("dotenv");
 const crypto = require("crypto");
 const axios = require("axios");
 const customerPayment = require("./views/customerPaymentSchema");
+const paymentSchema = require("./views/PaymentSchema");
+const orderSchema = require("./views/orderSchema");
 const dbConnect = require("./views/dbConnect");
 dotenv.config();
 dbConnect();
@@ -118,11 +120,31 @@ app.post("/razorpay/webhook", async (req, res) => {
       console.log(`Payment captured for order ID: ${orderId}`);
 
       // Update the order status in your database
-      const update = await customerPayment.updateOne(
+      const updateCustomerPayment = await customerPayment.updateOne(
         { orderId: notes.receipt },
         { $set: { paymentStatus: "Completed" } }
       );
-      console.log("update-->", update);
+
+      const updateOrder = await orderSchema.updateOne(
+        { _id: notes.receipt },
+        { $set: { paymentStatus: "Completed" } }
+      );
+
+      const updatePayment = await paymentSchema.updateOne(
+        { orderId: notes.receipt },
+        {
+          $set: {
+            requestStatus: "Completed",
+            paymentStatus: "Completed",
+            agencyPaymentStatus: "Completed",
+          },
+        }
+      );
+
+      console.log("updateCustomerPayment-->", updateCustomerPayment);
+      console.log("updateOrder-->", updateOrder);
+      console.log("updatePayment-->", updatePayment);
+
     }
 
     res.status(200).send("Webhook received");
