@@ -122,12 +122,12 @@ app.post("/razorpay/webhook", async (req, res) => {
       // Update the order status in your database
       const updateCustomerPayment = await customerPayment.updateOne(
         { orderId: notes.receipt },
-        { $set: { paymentStatus: "Completed" } }
+        { $set: { paymentStatus: "Completed", completedAt: new Date() } }
       );
 
       const updateOrder = await orderSchema.updateOne(
         { _id: notes.receipt },
-        { $set: { paymentStatus: "Completed" } }
+        { $set: { paymentStatus: "Completed", completedAt: new Date() } }
       );
 
       const updatePayment = await paymentSchema.updateOne(
@@ -144,7 +144,6 @@ app.post("/razorpay/webhook", async (req, res) => {
       console.log("updateCustomerPayment-->", updateCustomerPayment);
       console.log("updateOrder-->", updateOrder);
       console.log("updatePayment-->", updatePayment);
-
     }
 
     res.status(200).send("Webhook received");
